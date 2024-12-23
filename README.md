@@ -74,10 +74,7 @@ $ sudo nano 01-network-init.yaml
 ```
 
 https://www.linuxtechi.com/how-to-install-kvm-on-ubuntu/#Prerequisites
-
 ## Set up DNS zone and configure /etc/hosts
-
-
 ## Install the software packages
 Your server should now be booted up and ready. You can now login at the console. But I personally prefer to login from my workstation via SSH. Use the “mpvm” user (or whatever you named it) to login.
 
@@ -248,8 +245,6 @@ service apache2 reload
 ```
 
 Now you should have working web apache server, if encounter any issues you can invsetigate with `systemctl apache2 status` or `journalctl -xeu apache2`
-
-
 ## Set up the MySQL database
 A table in database terms is pretty much the same as a spreadsheet. You have rows and columns. And columns are also called fields. SQL statements can be entered in the “mysql” shell that you get when you run the “mysql” command as root on your server.
 
@@ -407,8 +402,6 @@ inet_protocols = all
 alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 ```
-
-
 ## Making Postfix send emails to Dovecot
 
 In a previous chapter we made sure that Postfix knows which emails it is allowed to receive. Now what to do with the email? It has to be stored to disk for your users. You could let Postfix handle that using its built-in mail delivery agent (MDA) called “virtual”. However compared to the capabilities that Dovecot provides like sieve rules or quotas the Postfix delivery agent is pretty basic. We are using Dovecot anyway to provide the IMAP (and optionally POP3) service. So let’s use it.
@@ -440,7 +433,6 @@ Execute the following command to add it into the main.cf.
 Edit the file /etc/dovecot/conf.d/20-lmtp.conf to tell lmtp service we will use Dovecot's plug, should be:
 `$ mail_plugins = $mail_plugins sieve`
 `$ service dovecot restart`
-
 
 ## Configure Dovecot
 Dovecot service is used for:
@@ -486,6 +478,16 @@ unix_listener /var/spool/postfix/private/auth {
   user = postfix
   group = postfix
 }
+
+inet_listener imaps {
+   port = 993
+   ssl = yes
+}
+
+ inet_listener pop3s {
+   port = 995
+   ssl = yes
+}
 ````
 #### 10-ssl.conf
 ```
@@ -523,3 +525,60 @@ chmod go= /etc/dovecot/dovecot-sql.conf.ext
 Look at your /var/log/mail.log logfile. You should see:
 
 `... dovecot: master: Dovecot v2.2.13 starting up for imap, sieve, pop3 (core dumps disabled)`
+## Configure Roundcube
+
+To access Postfix and Dovecot servers, install Roundcube email client.
+
+Ensure you have the following rows in the file /etc/apache2/sites-available/roundcube.conf between <VirtualHost> tags.
+```
+    Include /etc/roundcube/apache.conf
+	Alias / /var/lib/roundcube/
+```
+and after that reload the apache2 and check for any errors.
+
+```
+service apache2 reload
+apache2ctl configtest
+cat /var/log/apache2/error.log
+```
+Now it should be able to see the webmail interface on https://mail.mariopetkov.com/roundcube
+
+**Note**: The “Server” is always “localhost”. So edit the /etc/roundcube/config.inc.php file and set:
+
+`$config['default_host'] = 'localhost';`
+
+Also to add plugins list them in the same configuration file as:
+```
+$config['plugins'] = array(	 	 
+ 'archive',	 	 
+ 'zipdownload',	 	 
+ 'managesieve',	 	 
+ 'password',	 	 
+);
+```
+#### Configure the managesieve plugin
+A default configuration can be found at /usr/share/roundcube/plugins/managesieve/config.inc.php.dist on your system. Copy it to the location where Roundcube will look for it:
+
+`cp /usr/share/roundcube/plugins/managesieve/config.inc.php.dist /etc/roundcube/plugins/managesieve/config.inc.php`
+
+No further changes are required.
+
+#### Configure the password plugin
+To let the users change their passwords we use this plugin and let's copy the default configuration file to the right place:
+
+`cp /usr/share/roundcube/plugins/password/config.inc.php.dist /etc/roundcube/plugins/password/config.inc.php`
+
+I have updated only the following settings:
+
+```
+$config['password_db_dsn'] = 'mysql://roundcube:GeneratedPassword123@127.0.0.1/roundcubemail';
+$config['password_query'] = ' UPDATE virtual_users SET password = ENCRYPT(%p, CONCAT(\'$6$\', SUBSTRING(SHA256(RAND()), -16))) WHERE email = %u'
+```
+Let's try to login into our account. 
+
+If you are not able to login check your /var/log/mail.log and /var/log/roundcube/errors files for errors.
+
+
+
+## To be continued...
+Until now you should be able to send and receive mails locally via the Roundcube webmail.
