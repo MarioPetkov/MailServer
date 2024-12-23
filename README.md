@@ -146,7 +146,7 @@ If all went well you can now run “mysql” and get a connection to your MySQL 
 
 Exit the MySQL shell with “exit” or just press CTRL-D.
 
-![Screenshot showing successfully login into MySQL and exit.](https://github.com/MarioPetkov/MailServer/blob/main/mysql-connected.png)
+![Screenshot showing successfully login into MySQL and exit.](https://github.com/MarioPetkov/MailServer/blob/main/images/mysql-connected.png)
 
 ### Postfix
 
