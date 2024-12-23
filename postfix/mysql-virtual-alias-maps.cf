@@ -1,0 +1,5 @@
+user = roundcube
+password = AdminPassword123
+hosts = 127.0.0.1
+dbname = roundcubemail
+query = SELECT destination FROM virtual_aliases WHERE source='%s'
