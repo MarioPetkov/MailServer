@@ -441,6 +441,7 @@ Dovecot service is used for:
 - allows the user to fetch emails using POP3 or IMAP
 
 We will create new user for security reason that will own all virtual mailboxes with proper permissions.
+In my case I am using UID with 5000, you can use any UID if not taken from another user.
 ```
 groupadd -g 5000 vmail
 useradd -g vmail -u 5000 vmail -d /var/vmail -m
